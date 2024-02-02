@@ -47,6 +47,7 @@ func configureUserFields(uf *UserFields) {
 }
 
 func countTokens(input string) error {
+
 	return nil
 }
 
