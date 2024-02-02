@@ -2,11 +2,13 @@ package onwrite
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/googleapis/google-cloudevents-go/cloud/firestoredata"
+	"github.com/nohe427/token-pipeline/formatter"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -46,14 +48,32 @@ func configureUserFields(uf *UserFields) {
 	}
 }
 
-func countTokens(input string) error {
+func countTokens(input string) (int, error) {
 
-	return nil
+	return 0, nil
 }
 
 func docUpdated(ctx context.Context, e event.Event) error {
 	uf := UserFields{InputText: "inputText", OutputText: "outputText", InputTextTokenCount: "inputTextTokenCount", OutputTextTokenCount: "outputTextTokenCount"}
 	configureUserFields(&uf)
+
+	fe, err := protoEventToFirestoreEvent(e)
+	if err != nil {
+		return err
+	}
+	inputStr := fe.GetValue().GetFields()[uf.InputText].GetStringValue()
+	fmtInputStr, err := formatter.FormatInput(inputStr)
+	if err != nil {
+		return err
+	}
+
+	outputStr := fe.GetValue().GetFields()[uf.OutputText].GetStringValue()
+	fmtOutputStr, err := formatter.FormatInput(outputStr)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(fmtInputStr, fmtOutputStr)
 
 	return nil
 }
