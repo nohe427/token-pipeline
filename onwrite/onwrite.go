@@ -91,7 +91,10 @@ func docUpdated(ctx context.Context, e event.Event) error {
 		return err
 	}
 
-	projId := metadata.ProjectID()
+	projId, err := metadata.ProjectID()
+	if err != nil {
+		return err
+	}
 
 	opts := CountTokenOpts{Location: vertexhelp.DEFAULT_LOCATION, ProjectID: projId, Model: vertexhelp.DEFAULT_MODEL, Token: adcToken}
 	countTokens(fmtInputStr, opts)
