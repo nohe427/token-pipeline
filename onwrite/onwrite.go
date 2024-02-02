@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"os"
 
+	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/googleapis/google-cloudevents-go/cloud/firestoredata"
+	"github.com/nohe427/token-pipeline/adc"
 	"github.com/nohe427/token-pipeline/formatter"
+	"github.com/nohe427/token-pipeline/vertexhelp"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -17,6 +20,13 @@ type UserFields struct {
 	OutputText           string
 	InputTextTokenCount  string
 	OutputTextTokenCount string
+}
+
+type CountTokenOpts struct {
+	Location  string
+	ProjectID string
+	Model     string
+	Token     string
 }
 
 func init() {
@@ -48,9 +58,10 @@ func configureUserFields(uf *UserFields) {
 	}
 }
 
-func countTokens(input string) (int, error) {
-
-	return 0, nil
+func countTokens(input string, opts CountTokenOpts) (int, error) {
+	ctp := vertexhelp.NewCountTokenParams(opts.Location, opts.ProjectID, opts.Model)
+	ctReq := vertexhelp.CountTokenRequest{Instances: []vertexhelp.Prompt{{Prompt: input}}}
+	return vertexhelp.RequestTokenCount(ctp, &ctReq, opts.Token)
 }
 
 func docUpdated(ctx context.Context, e event.Event) error {
@@ -74,6 +85,16 @@ func docUpdated(ctx context.Context, e event.Event) error {
 	}
 
 	fmt.Println(fmtInputStr, fmtOutputStr)
+
+	adcToken, err := adc.GetADCToken()
+	if err != nil {
+		return err
+	}
+
+	projId := metadata.ProjectID()
+
+	opts := CountTokenOpts{Location: vertexhelp.DEFAULT_LOCATION, ProjectID: projId, Model: vertexhelp.DEFAULT_MODEL, Token: adcToken}
+	countTokens(fmtInputStr, opts)
 
 	return nil
 }
